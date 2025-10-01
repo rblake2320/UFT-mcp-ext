@@ -1,0 +1,294 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master", "develop" ]
+    tags:     [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Run build with verbose output'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  ARTIFACT_NAME: uft-mcp-ext
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better version detection
+
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell Version: $($PSVersionTable.PSVersion)"
+          Write-Host "OS: $($PSVersionTable.OS)"
+          Write-Host "Platform: $($PSVersionTable.Platform)"
+
+      - name: Validate project structure
+        shell: pwsh
+        run: |
+          $requiredPaths = @(
+            "src/extension/manifest.json",
+            "src/extension/extension.js",
+            "src/extension/extension.css",
+            "tools/build.ps1",
+            "tools/test.ps1"
+          )
+          
+          $missing = @()
+          foreach ($path in $requiredPaths) {
+            if (-not (Test-Path $path)) {
+              $missing += $path
+            }
+          }
+          
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing required files: $($missing -join ', ')"
+            exit 1
+          }
+          
+          Write-Host "✓ All required files present" -ForegroundColor Green
+
+      - name: Update version from tag (if applicable)
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref }}".Replace('refs/tags/v', '')
+          Write-Host "Updating version to: $tag"
+          
+          $manifestPath = "src/extension/manifest.json"
+          $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+          $manifest.version = $tag
+          $manifest | ConvertTo-Json -Depth 10 | Set-Content $manifestPath -NoNewline
+          
+          Write-Host "✓ Version updated in manifest.json" -ForegroundColor Green
+
+      - name: Build Extension
+        shell: pwsh
+        run: |
+          $verboseFlag = if ("${{ github.event.inputs.verbose }}" -eq "true") { "-VerboseOutput" } else { "" }
+          pwsh tools/build.ps1 -Clean $verboseFlag
+
+      - name: Run Tests
+        shell: pwsh
+        run: |
+          $verboseFlag = if ("${{ github.event.inputs.verbose }}" -eq "true") { "-VerboseOutput" } else { "" }
+          pwsh tools/test.ps1 -SkipBuild $verboseFlag
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-${{ github.sha }}
+          path: artifacts/*.dxt
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: |
+            artifacts/*.log
+            artifacts/*.txt
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Generate Build Summary
+        if: always()
+        shell: pwsh
+        run: |
+          $artifacts = Get-ChildItem artifacts/*.dxt -ErrorAction SilentlyContinue
+          
+          if ($artifacts) {
+            Write-Host "## 📦 Build Artifacts" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY
+            Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            
+            foreach ($artifact in $artifacts) {
+              $size = [math]::Round($artifact.Length / 1KB, 2)
+              Write-Host "- **$($artifact.Name)** (${size} KB)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            }
+            
+            Write-Host "" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "### Installation" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "1. Download the .dxt file from artifacts" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "2. Open UFT One" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "3. Go to Tools → Options → GUI Testing → Add-ins" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "4. Click 'Install Extension' and browse to the .dxt file" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+            Write-Host "5. Restart UFT One" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          } else {
+            Write-Host "⚠️ No artifacts generated" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY
+          }
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-${{ github.sha }}
+          path: artifacts
+
+      - name: Extract version and create changelog
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref }}".Replace('refs/tags/', '')
+          $version = $tag.Replace('v', '')
+          
+          Write-Output "tag=$tag" >> $env:GITHUB_OUTPUT
+          Write-Output "version=$version" >> $env:GITHUB_OUTPUT
+          
+          # Generate changelog
+          $changelog = @"
+          ## 🎉 UFT MCP Extension $tag
+          
+          ### 📦 What's Included
+          - UFT MCP Extension bundle (.dxt)
+          - Support for UFT One 15.0+
+          - MCP integration keywords
+          
+          ### 🔧 Installation
+          1. Download the .dxt file from the release assets
+          2. Open UFT One
+          3. Navigate to Tools → Options → GUI Testing → Add-ins
+          4. Click 'Install Extension' and select the downloaded .dxt file
+          5. Restart UFT One to activate the extension
+          
+          ### 📚 Documentation
+          See the [README](https://github.com/${{ github.repository }}/blob/main/README.md) for detailed usage instructions.
+          
+          ### ⚡ Quick Start
+          \`\`\`vbscript
+          ' Use in your UFT test scripts
+          MCP_Ping "Test Connection"
+          MCP_SetContext {"id": "test", "type": "automation"}
+          MCP_ExecutePrompt {"prompt": "Run test scenario"}
+          \`\`\`
+          "@
+          
+          Set-Content -Path "RELEASE_NOTES.md" -Value $changelog
+          Write-Host "Generated release notes for $tag"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: UFT MCP Extension ${{ steps.version.outputs.tag }}
+          body_path: RELEASE_NOTES.md
+          draft: false
+          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          files: |
+            artifacts/*.dxt
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+
+      - name: Update Latest Release Badge
+        if: success()
+        shell: pwsh
+        run: |
+          Write-Host "✅ Release ${{ steps.version.outputs.tag }} created successfully!"
+          Write-Host "📦 Download URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.tag }}"
+
+  validate:
+    name: Validate Extension
+    needs: build
+    runs-on: windows-latest
+    continue-on-error: true
+    
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}-${{ github.sha }}
+          path: artifacts
+
+      - name: Validate DXT structure
+        shell: pwsh
+        run: |
+          $dxtFiles = Get-ChildItem artifacts/*.dxt
+          
+          foreach ($dxt in $dxtFiles) {
+            Write-Host "Validating: $($dxt.Name)"
+            
+            # Create temp directory for extraction
+            $tempDir = New-Item -ItemType Directory -Path "$env:TEMP\dxt_validate_$(Get-Random)" -Force
+            
+            try {
+              # Copy and rename to .zip for extraction
+              $zipPath = "$tempDir\temp.zip"
+              Copy-Item $dxt.FullName -Destination $zipPath
+              
+              # Extract
+              Add-Type -AssemblyName System.IO.Compression.FileSystem
+              [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, "$tempDir\extracted")
+              
+              # Check for required files
+              $requiredFiles = @("manifest.json", "extension.js", "extension.css")
+              $missingFiles = @()
+              
+              foreach ($file in $requiredFiles) {
+                if (-not (Test-Path "$tempDir\extracted\$file")) {
+                  $missingFiles += $file
+                }
+              }
+              
+              if ($missingFiles.Count -eq 0) {
+                Write-Host "✅ $($dxt.Name) validation passed" -ForegroundColor Green
+                
+                # Read and display manifest info
+                $manifest = Get-Content "$tempDir\extracted\manifest.json" -Raw | ConvertFrom-Json
+                Write-Host "  Name: $($manifest.name)"
+                Write-Host "  Version: $($manifest.version)"
+                Write-Host "  ID: $($manifest.id)"
+              } else {
+                Write-Warning "❌ $($dxt.Name) missing files: $($missingFiles -join ', ')"
+              }
+            } finally {
+              # Cleanup
+              Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+  notify:
+    name: Build Notification
+    needs: [build, release]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Build Status Summary
+        run: |
+          if [ "${{ needs.build.result }}" == "success" ]; then
+            echo "✅ Build successful!"
+          else
+            echo "❌ Build failed!"
+          fi
+          
+          if [ "${{ needs.release.result }}" == "success" ]; then
+            echo "🚀 Release created successfully!"
+          elif [ "${{ needs.release.result }}" == "skipped" ]; then
+            echo "ℹ️ Release skipped (not a tag)"
+          else
+            echo "⚠️ Release failed or not applicable"
+          fi

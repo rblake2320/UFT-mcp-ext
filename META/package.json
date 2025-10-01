@@ -1,0 +1,39 @@
+{
+  "name": "uft-mcp-ext-meta",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Tooling and metadata for UFT MCP Extension development",
+  "author": "rblake2320",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rblake2320/UFT-mcp-ext.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "build": "pwsh ../tools/build.ps1 -Clean",
+    "test": "pwsh ../tools/test.ps1",
+    "test:skipbuild": "pwsh ../tools/test.ps1 -SkipBuild",
+    "clean": "pwsh -Command \"Remove-Item -Path '../dist', '../artifacts' -Recurse -Force -ErrorAction SilentlyContinue\"",
+    "lint": "echo 'ESLint not configured yet. Add it when needed.'",
+    "format": "echo 'Prettier not configured yet. Add it when needed.'",
+    "validate": "pwsh -Command \"& { $manifest = Get-Content '../src/extension/manifest.json' -Raw | ConvertFrom-Json; Write-Host \\\"Extension: $($manifest.name) v$($manifest.version)\\\" }\""
+  },
+  "devDependencies": {},
+  "optionalDependencies": {
+    "comment": "Add these when needed:",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "jest": "^29.0.0"
+  },
+  "keywords": [
+    "uft",
+    "mcp",
+    "extension",
+    "testing",
+    "automation",
+    "qtp"
+  ]
+}

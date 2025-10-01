@@ -1,0 +1,267 @@
+/**
+ * UFT MCP Extension Styles
+ * Styling for any UFT UI elements added by the extension
+ */
+
+/* Base styles for MCP extension elements */
+.uftext-mcp {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+/* MCP Panel styling */
+.mcp-panel {
+  background-color: #f5f5f5;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.mcp-panel-header {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #0078d4;
+}
+
+/* MCP Status indicators */
+.mcp-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mcp-status.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.mcp-status.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.mcp-status.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.mcp-status.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* MCP Buttons */
+.mcp-button {
+  background-color: #0078d4;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 3px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.mcp-button:hover {
+  background-color: #005a9e;
+}
+
+.mcp-button:active {
+  background-color: #004578;
+}
+
+.mcp-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.mcp-button.secondary {
+  background-color: #5c6670;
+}
+
+.mcp-button.secondary:hover {
+  background-color: #4a5259;
+}
+
+/* MCP Input fields */
+.mcp-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 14px;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+.mcp-input:focus {
+  outline: none;
+  border-color: #0078d4;
+  box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.1);
+}
+
+/* MCP Labels */
+.mcp-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+}
+
+/* MCP Results table */
+.mcp-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.mcp-results-table th {
+  background-color: #f0f0f0;
+  text-align: left;
+  padding: 8px;
+  font-weight: 600;
+  border-bottom: 2px solid #d0d0d0;
+}
+
+.mcp-results-table td {
+  padding: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mcp-results-table tr:hover {
+  background-color: #f8f8f8;
+}
+
+/* MCP Context display */
+.mcp-context {
+  background-color: #e8f4fd;
+  border-left: 4px solid #0078d4;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.mcp-context-title {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.mcp-context-value {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #444444;
+}
+
+/* MCP Loading indicator */
+.mcp-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #0078d4;
+  border-radius: 50%;
+  animation: mcp-spin 1s linear infinite;
+}
+
+@keyframes mcp-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* MCP Message box */
+.mcp-message {
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.mcp-message.info {
+  background-color: #e8f4fd;
+  border: 1px solid #bee5eb;
+}
+
+.mcp-message.success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.mcp-message.warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+}
+
+.mcp-message.error {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.mcp-message-icon {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* MCP Tooltip */
+.mcp-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.mcp-tooltip .mcp-tooltip-text {
+  visibility: hidden;
+  background-color: #333333;
+  color: white;
+  text-align: center;
+  padding: 5px 8px;
+  border-radius: 3px;
+  position: absolute;
+  z-index: 1000;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.mcp-tooltip .mcp-tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #333333 transparent transparent transparent;
+}
+
+.mcp-tooltip:hover .mcp-tooltip-text {
+  visibility: visible;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mcp-panel {
+    padding: 8px;
+  }
+  
+  .mcp-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .mcp-input {
+    padding: 5px 8px;
+    font-size: 13px;
+  }
+}

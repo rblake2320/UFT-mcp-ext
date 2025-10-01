@@ -1,0 +1,27 @@
+{
+  "name": "UFT MCP Extension",
+  "id": "com.rblake.mcp",
+  "version": "0.1.0",
+  "vendor": "rblake2320",
+  "description": "Custom UFT extension for MCP (Model Context Protocol) integration.",
+  "minUFTVersion": "15.0.0",
+  "files": [
+    "extension.js",
+    "extension.css"
+  ],
+  "keywords": ["UFT", "Extension", "MCP", "Automation", "Testing"],
+  "author": {
+    "name": "rblake2320",
+    "email": "rblake2320@github.com"
+  },
+  "compatibility": {
+    "uftOne": true,
+    "uftDeveloper": true,
+    "uftMobile": false
+  },
+  "entryPoint": "extension.js",
+  "configuration": {
+    "allowCustomKeywords": true,
+    "allowCustomAddins": true
+  }
+}
